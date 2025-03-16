@@ -1,6 +1,6 @@
 pragma solidity ^0.8.28;
 
-
+//zsgdfhfhsghfsgdf
 contract Lock {
     uint public unlockTime;
     address payable public owner;
@@ -18,8 +18,6 @@ contract Lock {
     }
 
     function withdraw() public {
-       
-
         require(block.timestamp >= unlockTime, "You can't withdraw yet");
         require(msg.sender == owner, "You aren't the owner");
 
