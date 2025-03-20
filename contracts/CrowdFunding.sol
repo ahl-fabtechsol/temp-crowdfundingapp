@@ -1,28 +1,69 @@
-pragma solidity ^0.8.28;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.19;
 
-//zsgdfhfhsghfsgdf
-contract Lock {
-    uint public unlockTime;
-    address payable public owner;
-
-    event Withdrawal(uint amount, uint when);
-
-    constructor(uint _unlockTime) payable {
-        require(
-            block.timestamp < _unlockTime,
-            "Unlock time should be in the future"
-        );
-
-        unlockTime = _unlockTime;
-        owner = payable(msg.sender);
+contract CrowdFunding {
+    struct Campaign {
+        address owner;
+        string title;
+        string description;
+        uint256 target;
+        uint256 deadline;
+        uint256 amountCollected;
+        address[] donators;
+        uint256[] donations;
     }
 
-    function withdraw() public {
-        require(block.timestamp >= unlockTime, "You can't withdraw yet");
-        require(msg.sender == owner, "You aren't the owner");
+    mapping(uint256 => Campaign) public campaigns;
+    uint256 public campaignsCount = 0;
 
-        emit Withdrawal(address(this).balance, block.timestamp);
+    function createCampaign(address _owner,string memory _title,string memory _description,uint256 _target ,uint256 _deadline) public returns (uint256){
+        Campaign storage campaign = campaigns[campaignsCount];
 
-        owner.transfer(address(this).balance);
+        require(campaign.deadline < block.timestamp , "The deadline should be a date in the future");
+
+
+        campaign.owner = _owner;
+        campaign.title = _title;
+        campaign.description = _description;
+        campaign.target = _target;
+        campaign.deadline = _deadline;
+        campaign.amountCollected = 0;
+
+        campaignsCount++;
+
+        return campaignsCount - 1;
+
     }
+
+    function donateToCampaign(uint256 _id) public payable {
+      uint256 amount = msg.value;
+      Campaign storage campaign = campaigns[_id];
+
+      campaign.donators.push(msg.sender);
+      campaign.donations.push(amount);
+
+      (bool sent,) = payable(campaign.owner).call{value:amount}("");
+
+      if(sent){
+        campaign.amountCollected = campaign.amountCollected + amount;
+      }
+    }
+
+
+
+   function getDonaters(uint256 _id) view public returns (address[] memory,uint256[] memory){
+    return (campaigns[_id].donators,campaigns[_id].donations);
+   }
+
+   function getCampaigns() view public returns (Campaign[] memory){
+      Campaign[] memory allCampaigns = new Campaign[](campaignsCount);
+
+      for(uint i = 0; i < campaignsCount; i++){
+        Campaign storage item = campaigns[i];
+        allCampaigns[i] = item;
+      }
+
+      return allCampaigns;
+   }
+
 }
